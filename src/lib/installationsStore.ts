@@ -49,7 +49,10 @@ export const installationsStore = {
 
 export function useInstallations(): Installation[] {
   const [, setTick] = useState(0);
-  useEffect(() => installationsStore.subscribe(() => setTick((t) => t + 1)), []);
+  useEffect(() => {
+    const unsub = installationsStore.subscribe(() => setTick((t) => t + 1));
+    return () => { unsub; };
+  }, []);
   return installationsStore.list();
 }
 
