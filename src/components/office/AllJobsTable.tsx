@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { Installation } from "@/lib/types";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDateTime } from "@/lib/format";
-import { MOCK_ELECTRICIANS } from "@/lib/mockData";
 
 interface AllJobsTableProps {
   installations: Installation[];
@@ -24,6 +23,11 @@ export function AllJobsTable({ installations, selectedId, onSelect }: AllJobsTab
     dir: "desc",
   });
   const [page, setPage] = useState(1);
+
+  const electricians = useMemo(
+    () => [...new Set(installations.map((i) => i.electrician))].sort(),
+    [installations]
+  );
 
   const filtered = useMemo(() => {
     return installations.filter((i) => {
@@ -70,7 +74,7 @@ export function AllJobsTable({ installations, selectedId, onSelect }: AllJobsTab
           className="min-h-[34px] rounded-md border border-office bg-office-elevated px-2 text-xs text-office-fg"
         >
           <option value="">Alle Elektriker</option>
-          {MOCK_ELECTRICIANS.map((n) => (
+          {electricians.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>

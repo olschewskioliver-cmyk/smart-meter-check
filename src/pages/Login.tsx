@@ -1,16 +1,33 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { Wordmark } from "@/components/shared/Wordmark";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { user, profile, loading, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"electrician" | "office">("office");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  // Redirect already-logged-in users to their dashboard
+  useEffect(() => {
+    if (!loading && user && profile) {
+      navigate(profile.role === "office" ? "/office" : "/check", { replace: true });
+    }
+  }, [user, profile, loading, navigate]);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    navigate(role === "electrician" ? "/check" : "/office");
+    setError(null);
+    setIsSubmitting(true);
+    const { error: authError } = await signIn(email, password);
+    if (authError) {
+      setError("E-Mail oder Passwort ungültig.");
+      setIsSubmitting(false);
+    }
+    // On success: the useEffect above handles redirect once profile loads
   }
 
   return (
@@ -57,37 +74,18 @@ export default function Login() {
             />
           </label>
 
-          <div className="mb-5">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-office-muted">
-              Rolle (Demo)
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { v: "electrician", l: "Elektriker" },
-                { v: "office", l: "Innendienst" },
-              ].map((opt) => (
-                <button
-                  key={opt.v}
-                  type="button"
-                  onClick={() => setRole(opt.v as typeof role)}
-                  className={[
-                    "min-h-[40px] rounded-lg border text-sm font-medium transition-colors",
-                    role === opt.v
-                      ? "border-office-accent bg-office-accent/15 text-office-fg"
-                      : "border-office bg-office-elevated text-office-muted hover:text-office-fg",
-                  ].join(" ")}
-                >
-                  {opt.l}
-                </button>
-              ))}
-            </div>
-          </div>
+          {error && (
+            <p className="mb-4 rounded-lg bg-destructive/15 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
-            className="min-h-[48px] w-full rounded-lg bg-office-accent text-sm font-semibold text-white hover:opacity-90"
+            disabled={isSubmitting}
+            className="min-h-[48px] w-full rounded-lg bg-office-accent text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
           >
-            Anmelden
+            {isSubmitting ? "Wird angemeldet…" : "Anmelden"}
           </button>
         </form>
 

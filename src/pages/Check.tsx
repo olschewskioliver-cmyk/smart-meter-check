@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Wordmark } from "@/components/shared/Wordmark";
 import { StepProgress } from "@/components/check/StepProgress";
 import { CompletedStepRow } from "@/components/check/CompletedStepRow";
@@ -9,9 +11,10 @@ import { LoadingScreen } from "@/components/check/LoadingScreen";
 import { ResultScreen } from "@/components/check/ResultScreen";
 import { RetakeModal } from "@/components/check/RetakeModal";
 import { PhotoCheck, STEPS, StepKey } from "@/lib/types";
-import { installationsStore } from "@/lib/installationsStore";
+import { saveInstallation } from "@/lib/saveInstallation";
+import { useAuth } from "@/context/AuthContext";
 
-type Phase = "capture" | "loading" | "result";
+type Phase = "capture" | "loading" | "saving" | "result";
 
 interface CapturedPhoto {
   step: StepKey;
@@ -19,6 +22,7 @@ interface CapturedPhoto {
 }
 
 export default function Check() {
+  const { user, profile, signOut } = useAuth();
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [meterNumber, setMeterNumber] = useState("");
   const [phase, setPhase] = useState<Phase>("capture");
@@ -48,11 +52,10 @@ export default function Check() {
 
   function runSimulatedCheck() {
     setPhase("loading");
-    // SIMULATION: replace with real AI call to vision/OCR endpoint
-    setTimeout(() => {
+    // SIMULATION — David will replace this with a real Edge Function call
+    setTimeout(async () => {
       const computed: PhotoCheck[] = STEPS.map((s) => {
         const photo = photos.find((p) => p.step === s.key)!;
-        // ~85% chance to pass; deterministic per step + count for repeatability
         const seed = (s.index * 7 + photos.length * 3) % 10;
         const passed = seed !== 0 && seed !== 1;
         return {
@@ -70,23 +73,25 @@ export default function Check() {
       if (anyFailed) {
         setShowRetakeModal(true);
       } else {
-        finalize(computed);
+        await finalize(computed);
       }
     }, 6000);
   }
 
-  function finalize(computed: PhotoCheck[]) {
-    const anyFailed = computed.some((c) => c.status === "failed");
-    const installation = {
-      id: installationsStore.nextId(),
-      electrician: "Markus Weber", // demo user
-      createdAt: new Date().toISOString(),
-      meterNumber,
-      status: anyFailed ? ("edge_case" as const) : ("auto_approved" as const),
-      photos: computed,
-    };
-    installationsStore.add(installation);
+  async function finalize(computed: PhotoCheck[]) {
     setShowRetakeModal(false);
+    setPhase("saving");
+    try {
+      await saveInstallation({
+        userId: user!.id,
+        meterNumber,
+        photos,
+        results: computed,
+      });
+    } catch (err) {
+      console.error("Save failed:", err);
+      toast.error("Speichern fehlgeschlagen – bitte Innendienst informieren.");
+    }
     setPhase("result");
   }
 
@@ -99,8 +104,8 @@ export default function Check() {
     setPhase("capture");
   }
 
-  function handleContinueFromModal() {
-    if (results) finalize(results);
+  async function handleContinueFromModal() {
+    if (results) await finalize(results);
   }
 
   function handleRestart() {
@@ -117,7 +122,10 @@ export default function Check() {
         <div className="mx-auto w-full max-w-[430px] px-5 pt-5 pb-4">
           <div className="mb-3 flex items-center justify-between">
             <Wordmark variant="light" subtitle="Smart Meter" />
-            <button className="text-xs font-medium text-white/70 hover:text-white">
+            <button
+              onClick={() => signOut()}
+              className="text-xs font-medium text-white/70 hover:text-white"
+            >
               Abmelden
             </button>
           </div>
@@ -133,6 +141,14 @@ export default function Check() {
         {phase === "loading" && (
           <div className="flex min-h-[60vh] flex-col">
             <LoadingScreen />
+          </div>
+        )}
+
+        {phase === "saving" && (
+          <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-8 py-12 text-center">
+            <Loader2 className="h-14 w-14 animate-spin text-primary" />
+            <div className="text-lg font-semibold text-foreground">Wird gespeichert…</div>
+            <div className="text-xs text-muted-foreground">Fotos werden hochgeladen.</div>
           </div>
         )}
 
