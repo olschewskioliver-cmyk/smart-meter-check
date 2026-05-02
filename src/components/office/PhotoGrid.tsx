@@ -1,0 +1,103 @@
+import { useState } from "react";
+import { PhotoCheck, STEPS } from "@/lib/types";
+import { Check, X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+
+interface PhotoGridProps {
+  photos: PhotoCheck[];
+}
+
+export function PhotoGrid({ photos }: PhotoGridProps) {
+  const [zoomed, setZoomed] = useState<PhotoCheck | null>(null);
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {STEPS.map((s) => {
+          const photo = photos.find((p) => p.step === s.key);
+          if (!photo) return null;
+          const passed = photo.status === "passed";
+          return (
+            <div
+              key={s.key}
+              className="overflow-hidden rounded-xl border border-office bg-office-panel"
+            >
+              <button
+                type="button"
+                onClick={() => setZoomed(photo)}
+                className="block aspect-video w-full overflow-hidden bg-office-elevated"
+              >
+                <img
+                  src={photo.imageUrl}
+                  alt={s.title}
+                  className="h-full w-full object-cover transition-transform hover:scale-105"
+                />
+              </button>
+              <div className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-office-muted">
+                      Schritt {s.index}
+                    </div>
+                    <div className="truncate text-sm font-semibold text-office-fg">
+                      {s.title}
+                    </div>
+                  </div>
+                  <div
+                    className={[
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                      passed
+                        ? "bg-success/20 text-success"
+                        : "bg-destructive/20 text-destructive",
+                    ].join(" ")}
+                  >
+                    {passed ? (
+                      <Check className="h-4 w-4" strokeWidth={3} />
+                    ) : (
+                      <X className="h-4 w-4" strokeWidth={3} />
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-[11px]">
+                  <span
+                    className={[
+                      "rounded px-1.5 py-0.5 font-semibold",
+                      passed
+                        ? "bg-success/15 text-success"
+                        : "bg-destructive/15 text-destructive",
+                    ].join(" ")}
+                  >
+                    {passed ? "OK" : "Fehler"}
+                  </span>
+                  <span className="text-office-muted">
+                    Konfidenz {Math.round(photo.confidence * 100)}%
+                  </span>
+                </div>
+                <p
+                  className={[
+                    "mt-2 text-xs leading-snug",
+                    passed ? "text-office-muted" : "text-destructive",
+                  ].join(" ")}
+                >
+                  {photo.reasoning}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Dialog open={!!zoomed} onOpenChange={(o) => !o && setZoomed(null)}>
+        <DialogContent className="max-w-3xl border-office bg-office-panel p-0">
+          {zoomed && (
+            <img
+              src={zoomed.imageUrl}
+              alt=""
+              className="h-auto max-h-[80vh] w-full object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
