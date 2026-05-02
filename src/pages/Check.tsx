@@ -13,6 +13,7 @@ import { RetakeModal } from "@/components/check/RetakeModal";
 import { PhotoCheck, STEPS, StepKey } from "@/lib/types";
 import { saveInstallation } from "@/lib/saveInstallation";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 type Phase = "capture" | "loading" | "saving" | "result";
 
@@ -50,24 +51,30 @@ export default function Check() {
     setPhotos((prev) => prev.filter((p) => p.step !== step));
   }
 
-  function runSimulatedCheck() {
+  async function runAiCheck() {
     setPhase("loading");
-    // SIMULATION — David will replace this with a real Edge Function call
-    setTimeout(async () => {
-      const computed: PhotoCheck[] = STEPS.map((s) => {
-        const photo = photos.find((p) => p.step === s.key)!;
-        const seed = (s.index * 7 + photos.length * 3) % 10;
-        const passed = seed !== 0 && seed !== 1;
-        return {
-          step: s.key,
-          imageUrl: photo.dataUrl,
-          status: passed ? "passed" : "failed",
-          confidence: passed ? 0.92 + (seed % 5) / 100 : 0.4 + (seed % 3) / 10,
-          reasoning: passed
-            ? "Bild scharf, alle relevanten Merkmale klar erkennbar."
-            : failureReasonFor(s.key),
-        };
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-photos", {
+        body: {
+          photos: photos.map((p) => ({ step: p.step, dataUrl: p.dataUrl })),
+        },
       });
+
+      if (error) throw error;
+
+      const computed: PhotoCheck[] = (data.results as Array<{
+        step: StepKey;
+        status: "passed" | "failed";
+        confidence: number;
+        reasoning: string;
+      }>).map((r) => ({
+        step: r.step,
+        imageUrl: photos.find((p) => p.step === r.step)!.dataUrl,
+        status: r.status,
+        confidence: r.confidence,
+        reasoning: r.reasoning,
+      }));
+
       setResults(computed);
       const anyFailed = computed.some((c) => c.status === "failed");
       if (anyFailed) {
@@ -75,7 +82,11 @@ export default function Check() {
       } else {
         await finalize(computed);
       }
-    }, 6000);
+    } catch (err) {
+      console.error("AI check failed:", err);
+      toast.error("KI-Analyse fehlgeschlagen – bitte erneut versuchen.");
+      setPhase("capture");
+    }
   }
 
   async function finalize(computed: PhotoCheck[]) {
@@ -205,7 +216,7 @@ export default function Check() {
             <SubmitButton
               remaining={remaining}
               ready={ready}
-              onSubmit={runSimulatedCheck}
+              onSubmit={runAiCheck}
             />
           </div>
         </div>
@@ -224,15 +235,3 @@ export default function Check() {
   );
 }
 
-function failureReasonFor(step: StepKey): string {
-  switch (step) {
-    case "gateway":
-      return "LED-Status nicht eindeutig erkennbar – Bild bitte erneut aufnehmen.";
-    case "meter_wiring":
-      return "Verkabelung nicht vollständig im Bild.";
-    case "cabinet":
-      return "Zählerschrank nicht vollständig sichtbar.";
-    case "nameplate":
-      return "Zählernummer unscharf oder verdeckt.";
-  }
-}

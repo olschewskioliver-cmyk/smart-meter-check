@@ -33,6 +33,7 @@ export async function saveInstallation({
     meter_number: meterNumber,
     status: anyFailed ? "edge_case" : "auto_approved",
     ai_score: Math.round(avgScore * 100) / 100,
+    ai_result_json: results as unknown as import("./database.types").Json,
   });
   if (installError) throw installError;
 
