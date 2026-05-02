@@ -18,6 +18,8 @@ PFLICHTKRITERIEN — SOFORTIGER FAIL:
 1. Kein sichtbarer physischer Schaden (Risse, Brandspuren, Verformungen)
 2. Alle sichtbaren Stecker und Anschlüsse vollständig und korrekt eingesteckt
 3. Keine LED zeigt Fehlerstatus (rot) — außer bei eindeutig nicht-kritischen Status-LEDs
+4. Gateway-Gehäuse vollständig geschlossen — kein offener Deckel, kein gebrochener Clip
+5. Keine sichtbare Kondensation, Feuchtigkeitsspuren oder Wasserflecken am/um das Gateway
 
 LED-STATUS — DETAILPRÜFUNG (KRITISCH):
 Prüfe jede einzelne LED am Gateway:
@@ -45,8 +47,15 @@ KABELMANAGEMENT:
 
 GERÄTEDOKUMENTATION:
 - QR-Code / Seriennummern-Aufkleber: Muss vorhanden, vollständig und unbeschädigt sein — abgelöst, gerissen oder fehlend → needs_review
-- Typenschild am Gerät: Muss lesbar und unversehrt sein
+- Typenschild am Gerät: Muss lesbar und unversehrt sein — Tippfehler auf Gerät-Aufkleber (z.B. "Gatewey") → needs_review
 - Antennenschutzkappe: Falls Antennenanschluss sichtbar ohne angeschlossenes Kabel → needs_review
+- Installationsdatum-Aufkleber: Sollte vorhanden und lesbar sein — fehlend oder unleserlich → needs_review
+
+GEHÄUSE UND UMGEBUNGSZUSTAND:
+- Kabel zu kurz und erzeugt sichtbare Zugspannung auf den Anschluss — Kabel unter mechanischer Spannung → needs_review
+- Unzureichender Freiraum um das Gateway: andere Objekte direkt anliegend, keine Belüftungsmöglichkeit → needs_review
+- Mehrere Gateways sichtbar und scheinbar aktiv — nur eines sollte betrieben werden → needs_review
+- Ungenutzte Ports (USB, Ethernet, etc.) nicht abgedeckt oder versiegelt → needs_review
 
 HINWEISE FÜR EDGE CASES:
 - Schlechte Beleuchtung oder Überbelichtung → needs_review
@@ -61,7 +70,14 @@ JSON-Schema:
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
   "begruendung": string,
-  "recommendation": "auto_approve" oder "needs_review"
+  "recommendation": "auto_approve" oder "needs_review",
+  "gateway_closed": boolean,
+  "cable_tension_detected": boolean,
+  "ventilation_clearance_ok": boolean,
+  "moisture_detected": boolean,
+  "multiple_gateways_detected": boolean,
+  "unused_ports_unsealed": boolean,
+  "installation_date_label_present": boolean oder null
 }`;
 
 const meterWiringPrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installationen eines deutschen Netzbetreibers.
@@ -92,6 +108,23 @@ KABELMARKIERUNGEN — DETAILPRÜFUNG:
 KABELKANAL UND ORDNUNG:
 - Kabelkanal-Deckel muss geschlossen sein — offener/angehobener Deckel → needs_review
 - Fehlende Abschlusskappe am Ende eines Klemmenblocks → needs_review
+- Kabelbinder fehlt oder gebrochen wo Kabel gebündelt sein sollten → needs_review
+
+NORMKONFORMITÄT (VDE 0100):
+- Farbkodierung korrekt (L braun/schwarz, N blau, PE grün-gelb)
+- Mindestbiegeradius eingehalten (keine starken Knickstellen)
+- Zugentlastung an Kabeldurchführungen vorhanden
+
+KLEMMENANSCHLÜSSE — ERWEITERTE DETAILPRÜFUNG (KRITISCH):
+- FEHLENDE ADERENDHÜLSEN: Litzenleiter ohne Aderendhülse direkt in Klemme eingeführt — erhöhte Brandgefahr → FAIL
+- DOPPELT BELEGTE KLEMME: Zwei Kabel in einer Klemme, die erkennbar nicht für Mehrfachbelegung ausgelegt ist → FAIL
+- N UND PE VERTAUSCHT: Neutralleiter (blau) und Schutzleiter (grün-gelb) in falschen Klemmen → FAIL
+- ZÄHLERUMGEHUNG (BYPASS): Kabel überbrückt den Zähler — illegale Umgehung → FAIL
+- FALSCHE PHASENZUORDNUNG: L1/L2/L3 erkennbar in falschen Klemmen angeschlossen → FAIL
+- KABELQUERSCHNITT ZU DÜNN: Kabel wirkt für die Klemmengröße/-nennung erkennbar zu dünn → needs_review
+- KABELDURCHFÜHRUNG NICHT ABGEDICHTET: Kabeleintritt ohne Tülle, Dichtung oder Knickschutz → needs_review
+- ZUGSPANNUNG AUF KLEMME: Kabel zu kurz und liegt unter mechanischer Zugspannung in der Klemme → needs_review
+- VERBINDUNGSDOSE IM SCHRANK: Abzweigdose oder Lüsterklemme sichtbar — gehört nicht in den Zählerschrank → needs_review
 
 HINWEISE FÜR EDGE CASES:
 - Foto unscharf oder zu dunkel → needs_review
@@ -105,7 +138,16 @@ JSON-Schema:
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
   "begruendung": string,
-  "recommendation": "auto_approve" oder "needs_review"
+  "recommendation": "auto_approve" oder "needs_review",
+  "ferrules_present": boolean,
+  "double_occupied_terminal": boolean,
+  "n_pe_vertauscht": boolean,
+  "zaehlerumgehung_detected": boolean,
+  "phasenzuordnung_korrekt": boolean,
+  "kabelquerschnitt_ausreichend": boolean,
+  "kabeldurchfuehrung_abgedichtet": boolean,
+  "zugspannung_auf_klemme": boolean,
+  "verbindungsdose_vorhanden": boolean
 }`;
 
 const cabinetPrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installationen eines deutschen Netzbetreibers.
@@ -117,12 +159,15 @@ PFLICHTKRITERIEN — SOFORTIGER FAIL:
 2. Kein Fremdkörper im Schrank (Werkzeug, Abfall, lose Teile)
 3. Plombe am Zähler vorhanden und intakt (falls sichtbar)
 4. Keine offenen Schlitze/Lücken an spannungsführenden Teilen ohne Abdeckblende
+5. Keine Feuchtigkeitsschäden: Rostflecken, Wasserflecken, Kondensation oder Schimmel im Schrank
+6. Nullschiene und PE-Sammelschiene müssen vorhanden sein
 
 SCHALTER UND KOMPONENTEN — DETAILPRÜFUNG:
 - Alle Leitungsschutzschalter müssen eingeschaltet sein (Hebel oben = EIN): Ein ausgeschalteter Schalter während andere eingeschaltet sind → FAIL
 - Alle Komponenten müssen gerade auf der DIN-Schiene sitzen — schiefe, kippende Bauteile → needs_review
 - Leere Schlitze auf der DIN-Schiene müssen mit Abdeckblenden verschlossen sein → needs_review
 - Fehlende Abdeckblenden an Sammelschienen oder Klemmen → FAIL
+- Verschiedene Fabrikate/Hersteller von Leitungsschutzschaltern → needs_review
 
 BESCHRIFTUNG — DETAILPRÜFUNG (KRITISCH):
 Untersuche jede einzelne Beschriftung im Schrank sehr genau:
@@ -130,19 +175,41 @@ Untersuche jede einzelne Beschriftung im Schrank sehr genau:
 - FEHLENDE BESCHRIFTUNG: Bestückter Schutzschalter ohne Beschriftung → needs_review
 - TIPPFEHLER: Offensichtliche Rechtschreibfehler (z.B. "Waschmaschiene", "Badzimer") → needs_review
 - INKONSISTENZ: Mix aus verschiedenen Beschriftungssystemen oder Handschriften → needs_review
+- ÜBERKLEBT/DURCHGESTRICHEN: Alte Beschriftung noch sichtbar unter neuer → needs_review
 
 STROMKREISVERZEICHNIS (Schranktür-Innenplan):
 - Muss vorhanden und vollständig ausgefüllt sein
 - Muss gerade/aufrecht angebracht sein — schief oder verkehrt herum → needs_review
 - Beschriftungen im Plan müssen mit tatsächlichen Schalterbezeichnungen übereinstimmen
+- Fehlende Zeilen oder leere Felder bei bestückten Schutzorganen → needs_review
 
 PRÜFAUFKLEBER UND PLOMBIERUNG:
 - Eichplombe am Zähler intakt: PASS
 - Plombe gebrochen oder fehlend → FAIL
+- Prüf-/Inspektionsaufkleber fehlt, abgelöst oder veraltet → needs_review
+
+INSTALLATIONSPRÜFUNG:
+- Schutzleiter (grün-gelb) korrekt geführt
+- Kabelkanäle/Kabelführungen geschlossen
+- Offene Kabelenden ohne Anschluss: needs_review
+
+ERWEITERTE SICHERHEITS- UND ZUSTANDSPRÜFUNG:
+- FI-SCHUTZSCHALTER FEHLT: Kein Fehlerstromschutzschalter (RCD) sichtbar, obwohl dieser bei Wohninstallationen vorgeschrieben ist → needs_review
+- KABELEINFÜHRUNGEN NICHT ABGEDICHTET: Kabeleintritt oben/unten ohne Dichtung oder Bürstenleiste — IP-Schutz beeinträchtigt → needs_review
+- ÜBERSPANNUNGSSCHUTZ FEHLT: Kein Überspannungsableiter (SPD) sichtbar → needs_review
+- KABELKANAL ÜBERFÜLLT: Kabelkanal erkennbar überlastet (Kabel drängen nach außen) → needs_review
+- SCHALTERAMPERE UNPLAUSIBEL: Nennstrom eines Schutzschalters wirkt offensichtlich zu hoch für den angeschlossenen Kabelquerschnitt → needs_review
+- SCHMELZSICHERUNGEN (ALTE TECHNOLOGIE): Veraltete Schmelzsicherungen statt moderner Leitungsschutzschalter → needs_review
+- SCHRANKTÜR-VERSCHLUSS DEFEKT: Scharnier oder Türverschluss erkennbar beschädigt → needs_review
+- ZÄHLER NICHT IM RAHMEN GESICHERT: Zähler sitzt erkennbar locker in der Zählerhalterung → needs_review
+- WARNSCHILDER FEHLEN: Keine Warnkennzeichnung (z.B. Blitzpfeil, Spannungswarnung) auf oder an der Schranktür → needs_review
+- ROST AM SCHRANKGEHÄUSE: Rost oder Korrosion am Metallgehäuse des Schranks sichtbar → needs_review
+- FALSCHER SCHRANK VERDACHT: Beschriftung, Adresse oder Name im/am Schrank passt erkennbar nicht zur erwarteten Installation → needs_review
 
 HINWEISE FÜR EDGE CASES:
 - Nur Teilansicht des Schranks sichtbar → needs_review
 - Ältere Anlage mit Schmelzsicherungen → needs_review
+- Sehr komplexes System → needs_review
 
 Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein Markdown, keine Codeblöcke, kein erläuternder Text.
 
@@ -152,7 +219,20 @@ JSON-Schema:
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
   "begruendung": string,
-  "recommendation": "auto_approve" oder "needs_review"
+  "recommendation": "auto_approve" oder "needs_review",
+  "fi_schutzschalter_vorhanden": boolean oder null,
+  "feuchtigkeitsschaden_detected": boolean,
+  "kabeleinführungen_abgedichtet": boolean,
+  "ueberspannungsschutz_vorhanden": boolean oder null,
+  "kabelkanal_ueberfuellt": boolean,
+  "nullschiene_pe_schiene_vorhanden": boolean,
+  "schalterampere_plausibel": boolean,
+  "schmelzsicherungen_vorhanden": boolean,
+  "schranktuer_schloss_intakt": boolean,
+  "zaehler_im_rahmen_gesichert": boolean,
+  "warnschilder_vorhanden": boolean oder null,
+  "rost_am_gehaeuse": boolean,
+  "falscher_schrank_verdacht": boolean
 }`;
 
 const nameplatePrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installationen eines deutschen Netzbetreibers.
@@ -169,6 +249,24 @@ ZÄHLERNUMMER-EXTRAKTION:
 - Extrahiere die Zählernummer so präzise wie möglich
 - Deutsche Zählernummern: typischerweise alphanumerisch, z.B. "1 ESY1 160000000" oder "DE0001..."
 - Bei Unschärfe oder Teilverdeck: null zurückgeben und needs_review setzen
+- Lies alle Varianten: "ZNr.", "Zählernummer", "Meter-ID", "Gerätenummer", "Fabriknummer"
+
+TECHNISCHE MINDESTANGABEN (sollten lesbar sein):
+- Hersteller (z.B. Landis+Gyr, Iskraemeco, EMH, Sagemcom, Itron)
+- Typ-/Modellbezeichnung
+- Baujahr oder Fertigungsdatum
+- Nennspannung und Nennstrom (z.B. 230V, 5(100)A)
+- Eichgültigkeitsdatum (PTB-Zulassung, Eichfrist) — überschritten oder fehlend → needs_review
+- Frequenzangabe (50 Hz) — fehlend oder unleserlich → needs_review
+- Genauigkeitsklasse (z.B. Klasse 1 oder 2) — fehlend oder unleserlich → needs_review
+- PTB-Baumusterprüfnummer — fehlend oder unleserlich → needs_review
+- MID/CE-Kennzeichnung (Messgeräterichtlinie) — fehlend → needs_review
+- Nennstrom offensichtlich nicht zur Installationsgröße passend → needs_review
+
+ZUSÄTZLICHE SICHERHEITSPRÜFUNGEN:
+- Zähler physisch verkehrt herum eingebaut (erkennbar an Typenschildausrichtung oder Anzeigerichtung) → FAIL
+- Manipulationssiegel am Zählergehäuse gebrochen oder fehlend (falls sichtbar) → FAIL
+- Zähleranzeigedisplay zeigt Fehlercode (falls Display im Foto sichtbar) → FAIL
 
 BEWERTUNGSLOGIK:
 - Zählernummer vollständig lesbar + Schild unversehrt → auto_approve möglich
@@ -180,6 +278,7 @@ HINWEISE FÜR EDGE CASES:
 - Starke Reflexion auf dem Typenschild → needs_review
 - Foto aus zu großem Abstand → needs_review
 - Mehrere Typenschilder sichtbar → alle prüfen, strenge Bewertung
+- Schutzfolie noch auf dem Schild → needs_review
 
 Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein Markdown, keine Codeblöcke, kein erläuternder Text.
 
@@ -190,7 +289,19 @@ JSON-Schema:
   "issues": string[],
   "begruendung": string,
   "recommendation": "auto_approve" oder "needs_review",
-  "zaehler_nummer": string oder null
+  "zaehler_nummer": string oder null,
+  "hersteller": string oder null,
+  "zaehler_typ": string oder null,
+  "baujahr": string oder null,
+  "eichgueltigkeit": string oder null,
+  "mid_kennzeichnung_vorhanden": boolean oder null,
+  "genauigkeitsklasse_lesbar": boolean oder null,
+  "ptb_nummer_lesbar": boolean oder null,
+  "zähler_verkehrt_eingebaut": boolean,
+  "manipulationssiegel_intakt": boolean oder null,
+  "display_fehlercode_sichtbar": boolean oder null,
+  "frequenzangabe_lesbar": boolean oder null,
+  "nennstrom_plausibel": boolean oder null
 }`;
 
 const PROMPTS: Record<StepKey, string> = {
