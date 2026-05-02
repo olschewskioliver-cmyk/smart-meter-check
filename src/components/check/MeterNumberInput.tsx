@@ -15,7 +15,7 @@ export function MeterNumberInput({ detected, value, onChange }: MeterNumberInput
         Erkannte Zählernummer
       </div>
       <div className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-        {detected ?? value || "–"}
+        {detected ?? (value || "–")}
       </div>
       <div className="mt-4 flex gap-2">
         <input
