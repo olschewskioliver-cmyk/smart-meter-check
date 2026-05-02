@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "@/components/office/Sidebar";
 import type { OfficeView } from "@/components/office/Sidebar";
@@ -15,6 +15,27 @@ export default function Office() {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const [view, setView] = useState<OfficeView>("edge");
+  const [panelWidth, setPanelWidth] = useState(380);
+  const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  function handleDragStart(e: React.MouseEvent) {
+    dragState.current = { startX: e.clientX, startWidth: panelWidth };
+
+    function onMouseMove(ev: MouseEvent) {
+      if (!dragState.current) return;
+      const delta = ev.clientX - dragState.current.startX;
+      setPanelWidth(Math.min(Math.max(dragState.current.startWidth + delta, 260), 720));
+    }
+
+    function onMouseUp() {
+      dragState.current = null;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
 
   const { data: installations = [], refetch } = useInstallationsList();
   const { data: selectedDetail, isLoading: detailLoading } = useInstallationDetail(id);
@@ -71,7 +92,7 @@ export default function Office() {
         <TopBar name={profile?.full_name ?? "Innendienst"} onSignOut={signOut} />
 
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-[380px] shrink-0 border-r border-office bg-office-panel">
+          <div style={{ width: panelWidth }} className="relative shrink-0 bg-office-panel">
             {view === "edge" && (
               <EdgeCaseQueue
                 installations={installations}
@@ -94,6 +115,11 @@ export default function Office() {
                 onSelect={handleSelect}
               />
             )}
+            {/* Drag handle — sits on the right edge, widens hit area for easy grab */}
+            <div
+              onMouseDown={handleDragStart}
+              className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-office hover:bg-office-accent/40 transition-colors"
+            />
           </div>
 
           <DetailPanel installation={selectedDetail} isLoading={detailLoading && !!id} />
