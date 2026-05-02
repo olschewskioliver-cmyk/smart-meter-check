@@ -21,11 +21,11 @@ export function InstallationCard({ installation, selected, onClick }: Installati
           : "border-office bg-office-panel hover:border-office-accent/50 hover:bg-office-elevated",
       ].join(" ")}
     >
-      <img
-        src={first.imageUrl}
-        alt=""
-        className="h-14 w-14 shrink-0 rounded-lg object-cover"
-      />
+      {first ? (
+        <img src={first.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+      ) : (
+        <div className="h-14 w-14 shrink-0 rounded-lg bg-office-elevated" />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate text-sm font-bold text-office-fg">

@@ -20,8 +20,8 @@ export function ProtectedRoute({ children, role }: Props) {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // Profile not loaded yet — wait (avoids flash-redirect on slow networks)
-  if (!profile) return null;
+  // If auth is done but profile is still null, the DB row is missing — boot back to login
+  if (!profile) return <Navigate to="/login" replace />;
 
   if (profile.role !== role) {
     return <Navigate to={profile.role === "office" ? "/office" : "/check"} replace />;
