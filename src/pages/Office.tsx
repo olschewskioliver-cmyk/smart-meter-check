@@ -26,6 +26,20 @@ export default function Office() {
     }
   }, [id, selectedDetail, detailLoading, navigate]);
 
+  // Auto-select the first item in the current view when nothing is selected
+  useEffect(() => {
+    if (id || installations.length === 0) return;
+    const filtered =
+      view === "edge"
+        ? installations.filter((i) => i.status === "edge_case" || i.status === "warning")
+        : view === "auto"
+        ? installations.filter((i) => i.status === "auto_approved" || i.status === "approved")
+        : installations;
+    if (filtered.length > 0) {
+      navigate(`/office/${filtered[0].id}`, { replace: true });
+    }
+  }, [id, installations, view, navigate]);
+
   function handleSelect(installationId: string) {
     navigate(`/office/${installationId}`);
   }
