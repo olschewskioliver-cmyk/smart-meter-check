@@ -17,12 +17,12 @@ export function ResultScreen({ photos, meterNumber, onRestart }: ResultScreenPro
           "rounded-2xl p-5 text-center font-semibold",
           allPassed
             ? "bg-success/15 text-success border border-success/30"
-            : "bg-destructive/15 text-destructive border border-destructive/30",
+            : "bg-muted text-muted-foreground border border-border",
         ].join(" ")}
       >
         {allPassed
           ? "Installation erfolgreich geprüft ✓"
-          : "Prüfung fehlgeschlagen"}
+          : "Fotos gespeichert – Innendienst prüft die Aufnahmen"}
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-4">
