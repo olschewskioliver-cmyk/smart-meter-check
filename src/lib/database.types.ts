@@ -38,6 +38,9 @@ export interface Database {
           ai_feedback: string | null;
           ai_result_json: Json | null;
           created_at: string;
+          review_comment: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -51,6 +54,9 @@ export interface Database {
           ai_feedback?: string | null;
           ai_result_json?: Json | null;
           created_at?: string;
+          review_comment?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -63,6 +69,32 @@ export interface Database {
           ai_score?: number | null;
           ai_feedback?: string | null;
           ai_result_json?: Json | null;
+          created_at?: string;
+          review_comment?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+        };
+      };
+      installation_comments: {
+        Row: {
+          id: string;
+          installation_id: string;
+          author_id: string;
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          installation_id: string;
+          author_id: string;
+          body: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          installation_id?: string;
+          author_id?: string;
+          body?: string;
           created_at?: string;
         };
       };

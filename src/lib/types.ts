@@ -55,12 +55,23 @@ export type InstallationStatus =
   | "approved"      // human-approved
   | "rejected";     // human-rejected
 
+export interface InstallationComment {
+  id: string;
+  body: string;
+  authorName: string;
+  createdAt: string;
+}
+
 export interface Installation {
   id: string;            // Job ID, e.g. INST-2419
+  dbId: string;          // UUID primary key in DB
   electrician: string;
   createdAt: string;     // ISO
   meterNumber: string;
   status: InstallationStatus;
   photos: PhotoCheck[];
   overallNote?: string;
+  reviewComment?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
 }

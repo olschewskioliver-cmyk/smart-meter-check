@@ -1,13 +1,30 @@
 import { useState } from "react";
 import { PhotoCheck, STEPS } from "@/lib/types";
-import { Check, X } from "lucide-react";
+import { Check, X, Download } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface PhotoGridProps {
   photos: PhotoCheck[];
+  jobId: string;
+  electrician: string;
 }
 
-export function PhotoGrid({ photos }: PhotoGridProps) {
+function sanitize(str: string) {
+  return str.replace(/[^a-zA-Z0-9\-_äöüÄÖÜß ]/g, "").trim();
+}
+
+async function downloadPhoto(imageUrl: string, filename: string) {
+  const res = await fetch(imageUrl);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function PhotoGrid({ photos, jobId, electrician }: PhotoGridProps) {
   const [zoomed, setZoomed] = useState<PhotoCheck | null>(null);
 
   return (
@@ -17,22 +34,34 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
           const photo = photos.find((p) => p.step === s.key);
           if (!photo) return null;
           const passed = photo.status === "passed";
+          const filename = `Foto ${s.index} - ${sanitize(jobId)} - ${sanitize(electrician)}.jpg`;
+
           return (
             <div
               key={s.key}
               className="overflow-hidden rounded-xl border border-office bg-office-panel"
             >
-              <button
-                type="button"
-                onClick={() => setZoomed(photo)}
-                className="block aspect-video w-full overflow-hidden bg-office-elevated"
-              >
-                <img
-                  src={photo.imageUrl}
-                  alt={s.title}
-                  className="h-full w-full object-cover transition-transform hover:scale-105"
-                />
-              </button>
+              <div className="relative block aspect-video w-full overflow-hidden bg-office-elevated">
+                <button
+                  type="button"
+                  onClick={() => setZoomed(photo)}
+                  className="h-full w-full"
+                >
+                  <img
+                    src={photo.imageUrl}
+                    alt={s.title}
+                    className="h-full w-full object-cover transition-transform hover:scale-105"
+                  />
+                </button>
+                <button
+                  type="button"
+                  title="Foto herunterladen"
+                  onClick={() => downloadPhoto(photo.imageUrl, filename)}
+                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white backdrop-blur-sm hover:bg-black/70"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <div className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">

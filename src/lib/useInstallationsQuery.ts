@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
-import type { Installation, InstallationStatus, PhotoCheck, StepKey } from "./types";
+import type { Installation, InstallationComment, InstallationStatus, PhotoCheck, StepKey } from "./types";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -10,7 +10,10 @@ type RawInstallation = {
   meter_number: string;
   status: string;
   created_at: string;
+  review_comment: string | null;
+  reviewed_at: string | null;
   profiles: { full_name: string } | null;
+  reviewer: { full_name: string } | null;
 };
 
 type RawPhoto = {
@@ -25,11 +28,15 @@ type RawPhoto = {
 function toInstallation(row: RawInstallation, photos: PhotoCheck[] = []): Installation {
   return {
     id: row.job_id,
+    dbId: row.id,
     electrician: row.profiles?.full_name ?? "Unbekannt",
     createdAt: row.created_at,
     meterNumber: row.meter_number,
     status: row.status as InstallationStatus,
     photos,
+    reviewComment: row.review_comment ?? undefined,
+    reviewedBy: row.reviewer?.full_name ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
   };
 }
 
@@ -40,7 +47,9 @@ async function fetchList(): Promise<Installation[]> {
     .from("installations")
     .select(`
       id, job_id, meter_number, status, created_at,
-      profiles!electrician_id ( full_name )
+      review_comment, reviewed_at,
+      profiles!electrician_id ( full_name ),
+      reviewer:profiles!reviewed_by ( full_name )
     `)
     .order("created_at", { ascending: false });
 
@@ -53,7 +62,9 @@ async function fetchDetail(jobId: string): Promise<Installation> {
     .from("installations")
     .select(`
       id, job_id, meter_number, status, created_at,
+      review_comment, reviewed_at,
       profiles!electrician_id ( full_name ),
+      reviewer:profiles!reviewed_by ( full_name ),
       installation_photos (
         photo_number, storage_path,
         ai_type, ai_result, ai_confidence, ai_reasoning
@@ -67,7 +78,6 @@ async function fetchDetail(jobId: string): Promise<Installation> {
   const rawPhotos = ((data as unknown as { installation_photos: RawPhoto[] }).installation_photos ?? [])
     .sort((a, b) => a.photo_number - b.photo_number);
 
-  // Generate signed Storage URLs for all photos in one call
   let urlMap: Record<string, string> = {};
   if (rawPhotos.length > 0) {
     const { data: signed } = await supabase.storage
@@ -89,6 +99,22 @@ async function fetchDetail(jobId: string): Promise<Installation> {
   return toInstallation(data as unknown as RawInstallation, photos);
 }
 
+async function fetchComments(installationDbId: string): Promise<InstallationComment[]> {
+  const { data, error } = await supabase
+    .from("installation_comments")
+    .select(`id, body, created_at, profiles!author_id ( full_name )`)
+    .eq("installation_id", installationDbId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as unknown as { id: string; body: string; created_at: string; profiles: { full_name: string } | null }[]).map((row) => ({
+    id: row.id,
+    body: row.body,
+    authorName: row.profiles?.full_name ?? "Unbekannt",
+    createdAt: row.created_at,
+  }));
+}
+
 // ─── hooks ───────────────────────────────────────────────────────────────────
 
 export function useInstallationsList() {
@@ -107,19 +133,64 @@ export function useInstallationDetail(jobId: string | undefined) {
   });
 }
 
+export function useInstallationComments(installationDbId: string | undefined) {
+  return useQuery({
+    queryKey: ["comments", installationDbId],
+    queryFn: () => fetchComments(installationDbId!),
+    enabled: !!installationDbId,
+  });
+}
+
 export function useUpdateStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ jobId, status }: { jobId: string; status: InstallationStatus }) => {
+    mutationFn: async ({
+      jobId,
+      status,
+      reviewComment,
+      reviewedBy,
+    }: {
+      jobId: string;
+      status: InstallationStatus;
+      reviewComment?: string;
+      reviewedBy?: string;
+    }) => {
       const { error } = await supabase
         .from("installations")
-        .update({ status })
+        .update({
+          status,
+          ...(reviewedBy ? { reviewed_by: reviewedBy, reviewed_at: new Date().toISOString() } : {}),
+          ...(reviewComment !== undefined ? { review_comment: reviewComment || null } : {}),
+        })
         .eq("job_id", jobId);
       if (error) throw error;
     },
     onSuccess: (_data, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: ["installations"] });
       queryClient.invalidateQueries({ queryKey: ["installation", jobId] });
+    },
+  });
+}
+
+export function useAddComment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      installationDbId,
+      authorId,
+      body,
+    }: {
+      installationDbId: string;
+      authorId: string;
+      body: string;
+    }) => {
+      const { error } = await supabase
+        .from("installation_comments")
+        .insert({ installation_id: installationDbId, author_id: authorId, body });
+      if (error) throw error;
+    },
+    onSuccess: (_data, { installationDbId }) => {
+      queryClient.invalidateQueries({ queryKey: ["comments", installationDbId] });
     },
   });
 }
