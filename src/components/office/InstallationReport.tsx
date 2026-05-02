@@ -18,19 +18,19 @@ const s = StyleSheet.create({
   metaValue: { fontSize: 10, fontWeight: "bold", color: "#111" },
   statusBadge: { alignSelf: "flex-start", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2 },
   sectionTitle: { fontSize: 8, fontWeight: "bold", color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 },
-  // Photo card — full width, 2 per page
-  photoCard: { marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 8, overflow: "hidden" },
-  photoImg: { width: "100%", height: 220 },
-  photoBody: { padding: 12, flexDirection: "row", gap: 16 },
-  photoLeft: { flex: 1 },
+  // Two-column photo row
+  photoRow: { flexDirection: "row", gap: 12 },
+  photoCard: { flex: 1, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 8, overflow: "hidden" },
+  photoImg: { width: "100%", height: 260, objectFit: "cover" },
+  photoBody: { padding: 10 },
   photoStepLabel: { fontSize: 7, color: "#888", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2 },
-  photoTitle: { fontSize: 11, fontWeight: "bold", color: "#111", marginBottom: 6 },
-  reasoning: { fontSize: 9, color: "#555", lineHeight: 1.5 },
-  resultCol: { alignItems: "flex-end", gap: 4 },
-  badge: { borderRadius: 4, paddingHorizontal: 7, paddingVertical: 3, fontSize: 8, fontWeight: "bold" },
+  photoTitle: { fontSize: 10, fontWeight: "bold", color: "#111", marginBottom: 6 },
+  resultRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 5 },
+  badge: { borderRadius: 3, paddingHorizontal: 6, paddingVertical: 2, fontSize: 7, fontWeight: "bold" },
   confidence: { fontSize: 8, color: "#666" },
+  reasoning: { fontSize: 8, color: "#555", lineHeight: 1.5 },
   // Review box
-  reviewBox: { marginTop: 8, backgroundColor: "#f5f7fb", borderRadius: 6, padding: 12, borderLeftWidth: 3, borderLeftColor: BRAND },
+  reviewBox: { marginTop: 16, backgroundColor: "#f5f7fb", borderRadius: 6, padding: 12, borderLeftWidth: 3, borderLeftColor: BRAND },
   reviewLabel: { fontSize: 7, fontWeight: "bold", color: "#888", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5 },
   reviewText: { fontSize: 9, color: "#333", lineHeight: 1.5 },
   reviewMeta: { fontSize: 8, color: "#888", marginTop: 4 },
@@ -55,61 +55,51 @@ function statusColor(status: string) {
   return { bg: "#fee2e2", text: "#991b1b" };
 }
 
-function PhotoCard({ photo, step }: { photo: { imageUrl: string; status: string; confidence: number; reasoning: string }; step: typeof STEPS[number] }) {
-  const passed = photo.status === "passed";
-  return (
-    <View style={s.photoCard}>
-      {photo.imageUrl ? (
-        <Image src={photo.imageUrl} style={s.photoImg} />
-      ) : (
-        <View style={[s.photoImg, { backgroundColor: "#f3f4f6" }]} />
-      )}
-      <View style={s.photoBody}>
-        <View style={s.photoLeft}>
-          <Text style={s.photoStepLabel}>Schritt {step.index}</Text>
-          <Text style={s.photoTitle}>{step.title}</Text>
-          <Text style={s.reasoning}>{photo.reasoning || "—"}</Text>
-        </View>
-        <View style={s.resultCol}>
-          <View style={[s.badge, { backgroundColor: passed ? "#dcfce7" : "#fee2e2" }]}>
-            <Text style={{ color: passed ? "#166534" : "#991b1b", fontSize: 8, fontWeight: "bold" }}>
-              {passed ? "OK" : "FEHLER"}
-            </Text>
-          </View>
-          <Text style={s.confidence}>{Math.round(photo.confidence * 100)}%</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function Footer({ jobId }: { jobId: string }) {
-  return (
-    <View style={s.footer} fixed>
-      <Text style={s.footerText}>OVAG Netz – Smart Meter Prüfsystem</Text>
-      <Text style={s.footerText}>{jobId}</Text>
-    </View>
-  );
-}
-
 interface Props { installation: Installation }
 
 export function InstallationReport({ installation }: Props) {
   const generated = new Date().toLocaleString("de-DE");
   const createdDate = new Date(installation.createdAt).toLocaleString("de-DE");
   const sc = statusColor(installation.status);
-
-  // Map step keys to their photos
-  const photosByStep = Object.fromEntries(
-    installation.photos.map((p) => [p.step, p])
-  );
-
-  // Split 4 steps into two pairs → one pair per page
+  const photosByStep = Object.fromEntries(installation.photos.map((p) => [p.step, p]));
   const pairs = [STEPS.slice(0, 2), STEPS.slice(2, 4)];
+
+  function PhotoPair({ steps }: { steps: typeof STEPS }) {
+    return (
+      <View style={s.photoRow}>
+        {steps.map((step) => {
+          const photo = photosByStep[step.key];
+          if (!photo) return null;
+          const passed = photo.status === "passed";
+          return (
+            <View key={step.key} style={s.photoCard}>
+              {photo.imageUrl
+                ? <Image src={photo.imageUrl} style={s.photoImg} />
+                : <View style={[s.photoImg, { backgroundColor: "#f3f4f6" }]} />
+              }
+              <View style={s.photoBody}>
+                <Text style={s.photoStepLabel}>Schritt {step.index}</Text>
+                <Text style={s.photoTitle}>{step.title}</Text>
+                <View style={s.resultRow}>
+                  <View style={[s.badge, { backgroundColor: passed ? "#dcfce7" : "#fee2e2" }]}>
+                    <Text style={{ color: passed ? "#166534" : "#991b1b", fontSize: 7, fontWeight: "bold" }}>
+                      {passed ? "OK" : "FEHLER"}
+                    </Text>
+                  </View>
+                  <Text style={s.confidence}>Konfidenz {Math.round(photo.confidence * 100)}%</Text>
+                </View>
+                <Text style={s.reasoning}>{photo.reasoning || "—"}</Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
     <Document>
-      {/* ── Page 1: header + meta + photos 1 & 2 ── */}
+      {/* Page 1: header + meta + photos 1 & 2 */}
       <Page size="A4" style={s.page}>
         <View style={s.header}>
           <View>
@@ -150,21 +140,17 @@ export function InstallationReport({ installation }: Props) {
         </View>
 
         <Text style={s.sectionTitle}>Fotoprüfung</Text>
+        <PhotoPair steps={pairs[0]} />
 
-        {pairs[0].map((step) => {
-          const photo = photosByStep[step.key];
-          return photo ? <PhotoCard key={step.key} photo={photo} step={step} /> : null;
-        })}
-
-        <Footer jobId={installation.id} />
+        <View style={s.footer} fixed>
+          <Text style={s.footerText}>OVAG Netz – Smart Meter Prüfsystem</Text>
+          <Text style={s.footerText}>{installation.id}</Text>
+        </View>
       </Page>
 
-      {/* ── Page 2: photos 3 & 4 + review ── */}
+      {/* Page 2: photos 3 & 4 + review */}
       <Page size="A4" style={s.page}>
-        {pairs[1].map((step) => {
-          const photo = photosByStep[step.key];
-          return photo ? <PhotoCard key={step.key} photo={photo} step={step} /> : null;
-        })}
+        <PhotoPair steps={pairs[1]} />
 
         {(installation.reviewedBy || installation.reviewComment) && (
           <View style={s.reviewBox}>
@@ -174,14 +160,15 @@ export function InstallationReport({ installation }: Props) {
             )}
             <Text style={s.reviewMeta}>
               {installation.reviewedBy}
-              {installation.reviewedAt
-                ? ` · ${new Date(installation.reviewedAt).toLocaleString("de-DE")}`
-                : ""}
+              {installation.reviewedAt ? ` · ${new Date(installation.reviewedAt).toLocaleString("de-DE")}` : ""}
             </Text>
           </View>
         )}
 
-        <Footer jobId={installation.id} />
+        <View style={s.footer} fixed>
+          <Text style={s.footerText}>OVAG Netz – Smart Meter Prüfsystem</Text>
+          <Text style={s.footerText}>{installation.id}</Text>
+        </View>
       </Page>
     </Document>
   );
