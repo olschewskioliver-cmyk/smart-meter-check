@@ -78,19 +78,21 @@ async function fetchDetail(jobId: string): Promise<Installation> {
   const rawPhotos = ((data as unknown as { installation_photos: RawPhoto[] }).installation_photos ?? [])
     .sort((a, b) => a.photo_number - b.photo_number);
 
-  let urlMap: Record<string, string> = {};
+  const signedUrls: string[] = [];
   if (rawPhotos.length > 0) {
-    const { data: signed } = await supabase.storage
+    const { data: signed, error: signedError } = await supabase.storage
       .from("photos")
       .createSignedUrls(rawPhotos.map((p) => p.storage_path), 3600);
-    urlMap = Object.fromEntries(
-      (signed ?? []).map(({ path, signedUrl }) => [path, signedUrl ?? ""])
-    );
+    if (signedError) throw signedError;
+    // Use index-based mapping — safer than matching by path string
+    rawPhotos.forEach((_, i) => {
+      signedUrls.push(signed?.[i]?.signedUrl ?? "");
+    });
   }
 
-  const photos: PhotoCheck[] = rawPhotos.map((p) => ({
+  const photos: PhotoCheck[] = rawPhotos.map((p, i) => ({
     step: p.ai_type as StepKey,
-    imageUrl: urlMap[p.storage_path] ?? "",
+    imageUrl: signedUrls[i] ?? "",
     status: (p.ai_result ?? "passed") as "passed" | "failed",
     confidence: p.ai_confidence ?? 0,
     reasoning: p.ai_reasoning ?? "",
