@@ -107,7 +107,7 @@ function ElectricianRow({ stat }: { stat: ElectricianStat }) {
                   <div
                     key={j.jobId}
                     className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-office-elevated"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/office/${j.id}`); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/office/${j.jobId}`); }}
                   >
                     <span className="w-24 font-mono text-office-accent underline-offset-2 hover:underline">{j.jobId}</span>
                     <span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[j.status] ?? "bg-office-elevated text-office-muted"}`}>
