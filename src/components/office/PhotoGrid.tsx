@@ -24,6 +24,51 @@ async function downloadPhoto(imageUrl: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function PhotoCell({
+  photo,
+  title,
+  onClick,
+  onDownload,
+}: {
+  photo: PhotoCheck;
+  title: string;
+  onClick: () => void;
+  onDownload: () => void;
+}) {
+  const [broken, setBroken] = useState(false);
+  const missing = !photo.imageUrl || broken;
+
+  return (
+    <div className="relative block aspect-video w-full overflow-hidden bg-office-elevated">
+      {missing ? (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-office-muted">
+          <ImageOff className="h-8 w-8 opacity-40" />
+          <span className="text-xs opacity-50">Foto nicht verfügbar</span>
+        </div>
+      ) : (
+        <>
+          <button type="button" onClick={onClick} className="h-full w-full">
+            <img
+              src={photo.imageUrl}
+              alt={title}
+              className="h-full w-full object-cover transition-transform hover:scale-105"
+              onError={() => setBroken(true)}
+            />
+          </button>
+          <button
+            type="button"
+            title="Foto herunterladen"
+            onClick={onDownload}
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white backdrop-blur-sm hover:bg-black/70"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function PhotoGrid({ photos, jobId, electrician }: PhotoGridProps) {
   const [zoomed, setZoomed] = useState<PhotoCheck | null>(null);
 
@@ -41,37 +86,12 @@ export function PhotoGrid({ photos, jobId, electrician }: PhotoGridProps) {
               key={s.key}
               className="overflow-hidden rounded-xl border border-office bg-office-panel"
             >
-              <div className="relative block aspect-video w-full overflow-hidden bg-office-elevated">
-                <button
-                  type="button"
-                  onClick={() => photo.imageUrl ? setZoomed(photo) : undefined}
-                  className="h-full w-full"
-                >
-                  {photo.imageUrl ? (
-                    <img
-                      src={photo.imageUrl}
-                      alt={s.title}
-                      className="h-full w-full object-cover transition-transform hover:scale-105"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                        (e.currentTarget.nextElementSibling as HTMLElement | null)?.style.setProperty("display", "flex");
-                      }}
-                    />
-                  ) : null}
-                  <div className={`${photo.imageUrl ? "hidden" : "flex"} h-full w-full flex-col items-center justify-center gap-2 text-office-muted`}>
-                    <ImageOff className="h-8 w-8 opacity-40" />
-                    <span className="text-xs opacity-50">Foto nicht verfügbar</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  title="Foto herunterladen"
-                  onClick={() => downloadPhoto(photo.imageUrl, filename)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white backdrop-blur-sm hover:bg-black/70"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              <PhotoCell
+                photo={photo}
+                title={s.title}
+                onClick={() => setZoomed(photo)}
+                onDownload={() => downloadPhoto(photo.imageUrl, filename)}
+              />
               <div className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
