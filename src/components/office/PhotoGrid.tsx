@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PhotoCheck, STEPS } from "@/lib/types";
-import { Check, X, Download } from "lucide-react";
+import { Check, X, Download, ImageOff } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface PhotoGridProps {
@@ -44,14 +44,24 @@ export function PhotoGrid({ photos, jobId, electrician }: PhotoGridProps) {
               <div className="relative block aspect-video w-full overflow-hidden bg-office-elevated">
                 <button
                   type="button"
-                  onClick={() => setZoomed(photo)}
+                  onClick={() => photo.imageUrl ? setZoomed(photo) : undefined}
                   className="h-full w-full"
                 >
-                  <img
-                    src={photo.imageUrl}
-                    alt={s.title}
-                    className="h-full w-full object-cover transition-transform hover:scale-105"
-                  />
+                  {photo.imageUrl ? (
+                    <img
+                      src={photo.imageUrl}
+                      alt={s.title}
+                      className="h-full w-full object-cover transition-transform hover:scale-105"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        (e.currentTarget.nextElementSibling as HTMLElement | null)?.style.setProperty("display", "flex");
+                      }}
+                    />
+                  ) : null}
+                  <div className={`${photo.imageUrl ? "hidden" : "flex"} h-full w-full flex-col items-center justify-center gap-2 text-office-muted`}>
+                    <ImageOff className="h-8 w-8 opacity-40" />
+                    <span className="text-xs opacity-50">Foto nicht verfügbar</span>
+                  </div>
                 </button>
                 <button
                   type="button"
