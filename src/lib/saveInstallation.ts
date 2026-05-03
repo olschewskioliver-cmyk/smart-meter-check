@@ -15,11 +15,10 @@ export async function saveInstallation({
   photos,
   results,
 }: SaveParams): Promise<string> {
-  // Generate sequential job_id
-  const { count } = await supabase
-    .from("installations")
-    .select("*", { count: "exact", head: true });
-  const jobId = `INST-${String((count ?? 0) + 1).padStart(4, "0")}`;
+  // Generate sequential job_id via DB sequence (atomic, no race condition)
+  const { data: jobIdData, error: jobIdError } = await supabase.rpc("next_job_id");
+  if (jobIdError) throw jobIdError;
+  const jobId = jobIdData as string;
 
   const installationId = crypto.randomUUID();
   const anyFailed = results.some((r) => r.status === "failed");

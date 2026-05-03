@@ -38,7 +38,7 @@ export function UserManagement() {
           setForm({ username: "", fullName: "", password: "", email: "", role: "electrician" });
           toast({ title: "Benutzer erstellt", description: `${form.fullName} wurde angelegt.` });
         },
-        onError: (e) => toast({ title: "Fehler", description: e.message, variant: "destructive" }),
+        onError: () => toast({ title: "Fehler", description: "Benutzer konnte nicht erstellt werden.", variant: "destructive" }),
       }
     );
   }
@@ -54,7 +54,7 @@ export function UserManagement() {
           setNewPassword("");
           toast({ title: "Passwort geändert", description: `Passwort für ${resetTarget.full_name} wurde zurückgesetzt.` });
         },
-        onError: (e) => toast({ title: "Fehler", description: e.message, variant: "destructive" }),
+        onError: () => toast({ title: "Fehler", description: "Passwort konnte nicht geändert werden.", variant: "destructive" }),
       }
     );
   }
