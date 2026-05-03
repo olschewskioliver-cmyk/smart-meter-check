@@ -21,7 +21,7 @@ export async function saveInstallation({
   const jobId = jobIdData as string;
 
   const installationId = crypto.randomUUID();
-  const anyFailed = results.some((r) => r.status === "failed");
+  const anyFailed = results.some((r) => r.status === "failed" || r.status === "pending");
   const avgScore = results.reduce((sum, r) => sum + r.confidence, 0) / results.length;
 
   // Create installation record first
