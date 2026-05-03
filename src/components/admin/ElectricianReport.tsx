@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useElectricianStats, qualityRating, type ElectricianStat } from "@/lib/useAdminQuery";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -57,9 +56,8 @@ function ScoreBar({ value }: { value: number }) {
   );
 }
 
-function ElectricianRow({ stat }: { stat: ElectricianStat }) {
+function ElectricianRow({ stat, onSelectJob }: { stat: ElectricianStat; onSelectJob: (jobId: string) => void }) {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
 
   return (
     <>
@@ -107,7 +105,7 @@ function ElectricianRow({ stat }: { stat: ElectricianStat }) {
                   <div
                     key={j.jobId}
                     className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-office-elevated"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/office/${j.jobId}`); }}
+                    onClick={(e) => { e.stopPropagation(); onSelectJob(j.jobId); }}
                   >
                     <span className="w-24 font-mono text-office-accent underline-offset-2 hover:underline">{j.jobId}</span>
                     <span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[j.status] ?? "bg-office-elevated text-office-muted"}`}>
@@ -128,7 +126,7 @@ function ElectricianRow({ stat }: { stat: ElectricianStat }) {
   );
 }
 
-export function ElectricianReport() {
+export function ElectricianReport({ onSelectJob }: { onSelectJob: (jobId: string) => void }) {
   const { data: stats = [], isLoading } = useElectricianStats();
   const [search, setSearch] = useState("");
 
@@ -186,7 +184,7 @@ export function ElectricianReport() {
             ) : filtered.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-office-muted">Kein Elektriker gefunden.</td></tr>
             ) : (
-              filtered.map((s) => <ElectricianRow key={s.electricianId} stat={s} />)
+              filtered.map((s) => <ElectricianRow key={s.electricianId} stat={s} onSelectJob={onSelectJob} />)
             )}
           </tbody>
         </table>

@@ -49,16 +49,9 @@ export default function Office() {
     }
   }, [id, selectedDetail, detailLoading, navigate]);
 
-  // Switch away from views without a DetailPanel when a specific job is selected
-  useEffect(() => {
-    if (id && (view === "quality" || view === "users")) {
-      setView("all");
-    }
-  }, [id, view]);
-
   // Auto-select the first item in the current view when nothing is selected
   useEffect(() => {
-    if (id || installations.length === 0) return;
+    if (id || installations.length === 0 || view === "quality" || view === "users") return;
     const filtered =
       view === "edge"
         ? installations.filter((i) => i.status === "edge_case" || i.status === "warning")
@@ -106,7 +99,7 @@ export default function Office() {
           ) : view === "quality" ? (
             <div className="flex-1 overflow-y-auto bg-office px-8 py-8">
               <div className="mx-auto max-w-4xl">
-                <ElectricianReport />
+                <ElectricianReport onSelectJob={(jobId) => { setView("all"); navigate(`/office/${jobId}`); }} />
               </div>
             </div>
           ) : (
