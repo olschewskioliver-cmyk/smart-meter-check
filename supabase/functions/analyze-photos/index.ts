@@ -14,6 +14,12 @@ const gatewayPrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installati
 
 Analysiere dieses Foto eines Smart Meter Gateways und prüfe folgende Kriterien sehr sorgfältig:
 
+GRUNDVORAUSSETZUNG — PRIORITÄT 0 (vor allen anderen Kriterien prüfen):
+Ist auf dem Foto ein erkennbares Smart Meter Gateway (iMSys-Kommunikationseinheit) abgebildet?
+- Router, Modem, Switch, WLAN-Access-Point oder sonstiges Netzwerkgerät → sofortiger FAIL, smart_meter_erkannt: false
+- Leere Wand, Kabelkanal ohne Gerät oder komplett falsches Motiv → sofortiger FAIL, smart_meter_erkannt: false
+- Nur wenn eindeutig ein Smart Meter Gateway sichtbar ist → weiter mit den Detailkriterien, smart_meter_erkannt: true
+
 PFLICHTKRITERIEN — SOFORTIGER FAIL:
 1. Kein sichtbarer physischer Schaden (Risse, Brandspuren, Verformungen)
 2. Alle sichtbaren Stecker und Anschlüsse vollständig und korrekt eingesteckt
@@ -66,6 +72,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein Markdown, keine Cod
 
 JSON-Schema:
 {
+  "smart_meter_erkannt": boolean,
   "pass": boolean,
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
@@ -83,6 +90,13 @@ JSON-Schema:
 const meterWiringPrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installationen eines deutschen Netzbetreibers.
 
 Analysiere dieses Foto eines Stromzählers mit Verkabelung und prüfe folgende Kriterien sehr sorgfältig:
+
+GRUNDVORAUSSETZUNG — PRIORITÄT 0 (vor allen anderen Kriterien prüfen):
+Zeigt das Foto einen modernen Smart Meter (digitaler Zähler) mit sichtbarer oder vorbereiteter Gateway-Verbindung?
+- Alter Ferraris-Zähler (Drehteller) ohne digitales Display → sofortiger FAIL, smart_meter_erkannt: false
+- Zähler ohne jegliche Gateway-Verbindung oder optische Schnittstelle → sofortiger FAIL, smart_meter_erkannt: false
+- Komplett falsches Motiv (z.B. Kabelkanal ohne Zähler) → sofortiger FAIL, smart_meter_erkannt: false
+- Nur wenn eindeutig ein moderner Smart Meter sichtbar ist → weiter mit den Detailkriterien, smart_meter_erkannt: true
 
 PFLICHTKRITERIEN — SOFORTIGER FAIL:
 1. Keine freiliegenden Leiter oder blanken Drähte sichtbar
@@ -134,6 +148,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein Markdown, keine Cod
 
 JSON-Schema:
 {
+  "smart_meter_erkannt": boolean,
   "pass": boolean,
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
@@ -153,6 +168,13 @@ JSON-Schema:
 const cabinetPrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installationen eines deutschen Netzbetreibers.
 
 Analysiere dieses Foto eines geöffneten Zählerschranks und prüfe folgende Kriterien sehr sorgfältig:
+
+GRUNDVORAUSSETZUNG — PRIORITÄT 0 (vor allen anderen Kriterien prüfen):
+Ist im abgebildeten Zählerschrank ein Smart Meter (digitales Display, optische Schnittstelle oder Gateway-Verbindung) sichtbar?
+- Schrank enthält ausschließlich alte Ferraris-Zähler (Drehteller) ohne digitale Komponenten → sofortiger FAIL, smart_meter_erkannt: false
+- Komplett leerer Zählerschrank ohne Zähler → sofortiger FAIL, smart_meter_erkannt: false
+- Kein Zählerschrank im Bild (falsches Motiv) → sofortiger FAIL, smart_meter_erkannt: false
+- Nur wenn mindestens ein Smart Meter im Schrank sichtbar ist → weiter mit den Detailkriterien, smart_meter_erkannt: true
 
 PFLICHTKRITERIEN — SOFORTIGER FAIL:
 1. Keine Brandspuren, Ruß, geschmolzene Bauteile oder Überhitzungszeichen
@@ -215,6 +237,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein Markdown, keine Cod
 
 JSON-Schema:
 {
+  "smart_meter_erkannt": boolean,
   "pass": boolean,
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
@@ -238,6 +261,14 @@ JSON-Schema:
 const nameplatePrompt = `Du bist ein Qualitätsprüfer für Smart-Meter-Installationen eines deutschen Netzbetreibers.
 
 Analysiere dieses Foto des Typenschilds eines Smart Meters (Zählernummernschild) und prüfe folgende Kriterien:
+
+GRUNDVORAUSSETZUNG — PRIORITÄT 0 (vor allen anderen Kriterien prüfen):
+Ist das abgebildete Typenschild eindeutig das eines Smart Meters (moderner elektronischer Stromzähler)?
+- Typenschild eines Ferraris-Zählers (Drehteller) → sofortiger FAIL, smart_meter_erkannt: false
+- Typenschild eines Wasser-, Gas- oder Wärmezählers → sofortiger FAIL, smart_meter_erkannt: false
+- Kein Typenschild erkennbar oder komplett falsches Motiv → sofortiger FAIL, smart_meter_erkannt: false
+- Erkennbare Smart-Meter-Hersteller als Hinweis: Landis+Gyr, EMH, Sagemcom, Iskraemeco, Itron, Holley, Kamstrup
+- Nur wenn eindeutig ein Smart-Meter-Typenschild sichtbar ist → weiter mit den Detailkriterien, smart_meter_erkannt: true
 
 PFLICHTKRITERIEN (Fail bei Verletzung):
 1. Typenschild ist im Bild sichtbar
@@ -284,6 +315,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Kein Markdown, keine Cod
 
 JSON-Schema:
 {
+  "smart_meter_erkannt": boolean,
   "pass": boolean,
   "confidence": number (0.0 bis 1.0),
   "issues": string[],
