@@ -49,6 +49,13 @@ export default function Office() {
     }
   }, [id, selectedDetail, detailLoading, navigate]);
 
+  // Switch away from views without a DetailPanel when a specific job is selected
+  useEffect(() => {
+    if (id && (view === "quality" || view === "users")) {
+      setView("all");
+    }
+  }, [id, view]);
+
   // Auto-select the first item in the current view when nothing is selected
   useEffect(() => {
     if (id || installations.length === 0) return;
