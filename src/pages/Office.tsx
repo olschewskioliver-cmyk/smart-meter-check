@@ -7,6 +7,7 @@ import { EdgeCaseQueue } from "@/components/office/EdgeCaseQueue";
 import { AutoApprovedList } from "@/components/office/AutoApprovedList";
 import { AllJobsTable } from "@/components/office/AllJobsTable";
 import { DetailPanel } from "@/components/office/DetailPanel";
+import { UserManagement } from "@/components/office/UserManagement";
 import { useAuth } from "@/context/AuthContext";
 import { useInstallationsList, useInstallationDetail } from "@/lib/useInstallationsQuery";
 
@@ -86,43 +87,47 @@ export default function Office() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-office text-office-fg">
-      <Sidebar active={view} onChange={setView} counts={counts} stats={stats} />
+      <Sidebar active={view} onChange={setView} counts={counts} stats={stats} isAdmin={profile?.role === "admin"} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar name={profile?.full_name ?? "Innendienst"} onSignOut={signOut} />
 
         <div className="flex flex-1 overflow-hidden">
-          <div style={{ width: panelWidth }} className="relative shrink-0 bg-office-panel">
-            {view === "edge" && (
-              <EdgeCaseQueue
-                installations={installations}
-                selectedId={id}
-                onSelect={handleSelect}
-                onRefresh={refetch}
-              />
-            )}
-            {view === "auto" && (
-              <AutoApprovedList
-                installations={installations}
-                selectedId={id}
-                onSelect={handleSelect}
-              />
-            )}
-            {view === "all" && (
-              <AllJobsTable
-                installations={installations}
-                selectedId={id}
-                onSelect={handleSelect}
-              />
-            )}
-            {/* Drag handle — sits on the right edge, widens hit area for easy grab */}
-            <div
-              onMouseDown={handleDragStart}
-              className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-office hover:bg-office-accent/40 transition-colors"
-            />
-          </div>
-
-          <DetailPanel installation={selectedDetail} isLoading={detailLoading && !!id} />
+          {view === "users" ? (
+            <UserManagement />
+          ) : (
+            <>
+              <div style={{ width: panelWidth }} className="relative shrink-0 bg-office-panel">
+                {view === "edge" && (
+                  <EdgeCaseQueue
+                    installations={installations}
+                    selectedId={id}
+                    onSelect={handleSelect}
+                    onRefresh={refetch}
+                  />
+                )}
+                {view === "auto" && (
+                  <AutoApprovedList
+                    installations={installations}
+                    selectedId={id}
+                    onSelect={handleSelect}
+                  />
+                )}
+                {view === "all" && (
+                  <AllJobsTable
+                    installations={installations}
+                    selectedId={id}
+                    onSelect={handleSelect}
+                  />
+                )}
+                <div
+                  onMouseDown={handleDragStart}
+                  className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-office hover:bg-office-accent/40 transition-colors"
+                />
+              </div>
+              <DetailPanel installation={selectedDetail} isLoading={detailLoading && !!id} />
+            </>
+          )}
         </div>
       </div>
     </div>

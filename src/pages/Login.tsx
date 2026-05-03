@@ -13,8 +13,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      if (profile.role === "admin") navigate("/admin", { replace: true });
-      else if (profile.role === "office") navigate("/office", { replace: true });
+      if (profile.role === "office" || profile.role === "admin") navigate("/office", { replace: true });
       else navigate("/check", { replace: true });
     }
   }, [user, profile, loading, navigate]);

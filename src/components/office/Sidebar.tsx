@@ -1,17 +1,17 @@
-import { NavLink } from "react-router-dom";
-import { AlertCircle, CheckCircle2, ListChecks } from "lucide-react";
+import { AlertCircle, CheckCircle2, ListChecks, Users } from "lucide-react";
 import { Wordmark } from "@/components/shared/Wordmark";
 
-export type OfficeView = "edge" | "auto" | "all";
+export type OfficeView = "edge" | "auto" | "all" | "users";
 
 interface SidebarProps {
   active: OfficeView;
   onChange: (v: OfficeView) => void;
   counts: { edge: number; auto: number; all: number };
   stats: { todayChecked: number; autoApproved: number; edgeCases: number };
+  isAdmin?: boolean;
 }
 
-export function Sidebar({ active, onChange, counts, stats }: SidebarProps) {
+export function Sidebar({ active, onChange, counts, stats, isAdmin }: SidebarProps) {
   return (
     <aside className="flex h-full w-[220px] shrink-0 flex-col bg-office border-r border-office">
       <div className="px-5 pt-6 pb-8">
@@ -45,6 +45,20 @@ export function Sidebar({ active, onChange, counts, stats }: SidebarProps) {
           active={active === "all"}
           onClick={() => onChange("all")}
         />
+
+        {isAdmin && (
+          <>
+            <div className="mt-4 px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-office-muted">
+              Administration
+            </div>
+            <NavItem
+              icon={<Users className="h-4 w-4" />}
+              label="Benutzerverwaltung"
+              active={active === "users"}
+              onClick={() => onChange("users")}
+            />
+          </>
+        )}
       </nav>
 
       <div className="m-3 rounded-xl border border-office bg-office-panel p-4 text-xs">
@@ -57,19 +71,13 @@ export function Sidebar({ active, onChange, counts, stats }: SidebarProps) {
       </div>
 
       <div className="px-3 pb-4 text-[10px] text-office-muted/60">
-        <NavLink to="/login" className="hover:text-office-fg">Abmelden</NavLink>
       </div>
     </aside>
   );
 }
 
 function NavItem({
-  icon,
-  label,
-  active,
-  onClick,
-  badge,
-  badgeTone,
+  icon, label, active, onClick, badge, badgeTone,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -92,14 +100,10 @@ function NavItem({
       <span className={active ? "text-office-accent" : "text-office-muted"}>{icon}</span>
       <span className="flex-1 text-left">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span
-          className={[
-            "rounded-full px-2 py-0.5 text-[10px] font-bold",
-            badgeTone === "red"
-              ? "bg-destructive text-destructive-foreground"
-              : "bg-success text-success-foreground",
-          ].join(" ")}
-        >
+        <span className={[
+          "rounded-full px-2 py-0.5 text-[10px] font-bold",
+          badgeTone === "red" ? "bg-destructive text-destructive-foreground" : "bg-success text-success-foreground",
+        ].join(" ")}>
           {badge}
         </span>
       )}
@@ -108,8 +112,7 @@ function NavItem({
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: "red" | "green" }) {
-  const valueColor =
-    tone === "red" ? "text-destructive" : tone === "green" ? "text-success" : "text-office-fg";
+  const valueColor = tone === "red" ? "text-destructive" : tone === "green" ? "text-success" : "text-office-fg";
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-office-muted">{label}</span>

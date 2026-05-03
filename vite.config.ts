@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        // Cache the app shell (HTML + assets) — electricians need offline access
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4MB — needed for @react-pdf/renderer
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         // Supabase API and Storage: always network-first (data must be fresh)
         runtimeCaching: [
