@@ -143,6 +143,7 @@ Create `.env.local` from `.env.local.example` (ask Oliver for the key):
 ```
 VITE_SUPABASE_URL=https://mqiunwgmppxpzfbulndu.supabase.co
 VITE_SUPABASE_ANON_KEY=<ask Oliver>
+VERCEL_PERSONAL_TOKEN=<ask Oliver — personal Vercel account token>
 ```
 
 ```bash
@@ -150,6 +151,18 @@ npm install
 npm run dev    # http://localhost:8080
 npm run build  # production build
 ```
+
+## Deploying to Vercel
+
+Oliver has two Vercel accounts. This project belongs to the **personal account** (`olschewskioliver-9465`). The `.vercel/project.json` is already configured correctly.
+
+Always deploy using the personal token stored in `.env.local`:
+
+```bash
+TOKEN=$(grep VERCEL_PERSONAL_TOKEN .env.local | cut -d= -f2) && vercel --token "$TOKEN" --prod --yes
+```
+
+Never run `vercel --prod` without the `--token` flag — the global CLI auth may be set to the work account.
 
 ## Key files
 

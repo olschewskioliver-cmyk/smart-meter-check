@@ -5,9 +5,10 @@ interface ResultScreenProps {
   photos: PhotoCheck[];
   meterNumber: string;
   onRestart: () => void;
+  queued?: boolean;
 }
 
-export function ResultScreen({ photos, meterNumber, onRestart }: ResultScreenProps) {
+export function ResultScreen({ photos, meterNumber, onRestart, queued }: ResultScreenProps) {
   const allPassed = photos.every((p) => p.status === "passed");
 
   return (
@@ -15,12 +16,16 @@ export function ResultScreen({ photos, meterNumber, onRestart }: ResultScreenPro
       <div
         className={[
           "rounded-2xl p-5 text-center font-semibold",
-          allPassed
+          queued
+            ? "bg-warning/10 text-warning border border-warning/30"
+            : allPassed
             ? "bg-success/15 text-success border border-success/30"
             : "bg-muted text-muted-foreground border border-border",
         ].join(" ")}
       >
-        {allPassed
+        {queued
+          ? "Lokal gespeichert – wird hochgeladen sobald Verbindung besteht"
+          : allPassed
           ? "Installation erfolgreich geprüft ✓"
           : "Fotos gespeichert – Innendienst prüft die Aufnahmen"}
       </div>

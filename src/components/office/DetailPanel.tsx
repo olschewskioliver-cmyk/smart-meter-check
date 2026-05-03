@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { createElement, useState } from "react";
 import { Loader2, FileText, FileDown } from "lucide-react";
-import { pdf } from "@react-pdf/renderer";
 import { Installation } from "@/lib/types";
 import { PhotoGrid } from "./PhotoGrid";
 import { ResultBanner } from "./ResultBanner";
 import { ReviewModal } from "./ReviewModal";
 import { CommentsSection } from "./CommentsSection";
-import { InstallationReport } from "./InstallationReport";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatDateTime } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
@@ -75,7 +73,11 @@ export function DetailPanel({ installation, isLoading }: DetailPanelProps) {
     if (!installation) return;
     setPdfLoading(true);
     try {
-      const blob = await pdf(<InstallationReport installation={installation} />).toBlob();
+      const [{ pdf }, { InstallationReport }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("./InstallationReport"),
+      ]);
+      const blob = await pdf(createElement(InstallationReport, { installation })).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

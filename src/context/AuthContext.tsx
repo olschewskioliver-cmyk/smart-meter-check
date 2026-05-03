@@ -15,19 +15,31 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const profileCacheKey = (id: string) => `ovag_profile_${id}`;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (error) console.error("[auth] profile load failed:", error.message);
-    setProfile(data);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      if (error) throw error;
+      setProfile(data);
+      localStorage.setItem(profileCacheKey(userId), JSON.stringify(data));
+    } catch {
+      const cached = localStorage.getItem(profileCacheKey(userId));
+      if (cached) {
+        setProfile(JSON.parse(cached) as Profile);
+      } else {
+        setProfile(null);
+      }
+    }
   }
 
   useEffect(() => {
@@ -70,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
+    if (user) localStorage.removeItem(profileCacheKey(user.id));
     await supabase.auth.signOut();
   }
 
