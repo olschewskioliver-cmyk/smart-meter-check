@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useElectricianStats, qualityRating, type ElectricianStat } from "@/lib/useAdminQuery";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -58,6 +59,7 @@ function ScoreBar({ value }: { value: number }) {
 
 function ElectricianRow({ stat }: { stat: ElectricianStat }) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -102,8 +104,12 @@ function ElectricianRow({ stat }: { stat: ElectricianStat }) {
                   Letzte {stat.recentJobs.length} Aufträge
                 </div>
                 {stat.recentJobs.map((j) => (
-                  <div key={j.jobId} className="flex items-center gap-3 text-xs">
-                    <span className="w-24 font-mono text-office-muted">{j.jobId}</span>
+                  <div
+                    key={j.jobId}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-office-elevated"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/office/${j.id}`); }}
+                  >
+                    <span className="w-24 font-mono text-office-accent underline-offset-2 hover:underline">{j.jobId}</span>
                     <span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${STATUS_COLORS[j.status] ?? "bg-office-elevated text-office-muted"}`}>
                       {STATUS_LABELS[j.status] ?? j.status}
                     </span>
@@ -124,6 +130,11 @@ function ElectricianRow({ stat }: { stat: ElectricianStat }) {
 
 export function ElectricianReport() {
   const { data: stats = [], isLoading } = useElectricianStats();
+  const [search, setSearch] = useState("");
+
+  const filtered = search.trim()
+    ? stats.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
+    : stats;
 
   const summary = {
     good: stats.filter((s) => qualityRating(s) === "good").length,
@@ -147,6 +158,18 @@ export function ElectricianReport() {
         ))}
       </div>
 
+      {/* Filter */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-office-muted" />
+        <input
+          type="text"
+          placeholder="Elektriker suchen…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-office bg-office-panel py-2 pl-9 pr-4 text-sm text-office-fg placeholder:text-office-muted/50 focus:border-office-accent focus:outline-none"
+        />
+      </div>
+
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-office bg-office-panel">
         <table className="w-full text-sm">
@@ -160,10 +183,10 @@ export function ElectricianReport() {
           <tbody>
             {isLoading ? (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-office-muted">Lädt…</td></tr>
-            ) : stats.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-office-muted">Noch keine Aufträge vorhanden.</td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-office-muted">Kein Elektriker gefunden.</td></tr>
             ) : (
-              stats.map((s) => <ElectricianRow key={s.electricianId} stat={s} />)
+              filtered.map((s) => <ElectricianRow key={s.electricianId} stat={s} />)
             )}
           </tbody>
         </table>

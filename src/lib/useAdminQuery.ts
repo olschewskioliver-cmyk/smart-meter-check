@@ -13,7 +13,7 @@ export interface ElectricianStat {
   rejected: number;
   approved: number;
   avgScore: number;
-  recentJobs: Array<{ jobId: string; status: string; createdAt: string; aiScore: number }>;
+  recentJobs: Array<{ id: string; jobId: string; status: string; createdAt: string; aiScore: number }>;
 }
 
 export type QualityRating = "good" | "mixed" | "attention";
@@ -56,7 +56,7 @@ async function fetchElectricianStats(): Promise<ElectricianStat[]> {
     else if (row.status === "approved") s.approved++;
     s.avgScore += row.ai_score ?? 0;
     if (s.recentJobs.length < 10) {
-      s.recentJobs.push({ jobId: row.job_id, status: row.status, createdAt: row.created_at, aiScore: row.ai_score ?? 0 });
+      s.recentJobs.push({ id: row.id, jobId: row.job_id, status: row.status, createdAt: row.created_at, aiScore: row.ai_score ?? 0 });
     }
   }
 
