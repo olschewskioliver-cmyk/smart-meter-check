@@ -1,4 +1,4 @@
-import { Check, X, RotateCcw } from "lucide-react";
+import { Check, X, Clock, RotateCcw } from "lucide-react";
 import { PhotoCheck, STEPS } from "@/lib/types";
 
 interface ResultScreenProps {
@@ -10,6 +10,7 @@ interface ResultScreenProps {
 
 export function ResultScreen({ photos, meterNumber, onRestart, queued }: ResultScreenProps) {
   const allPassed = photos.every((p) => p.status === "passed");
+  const hasPending = photos.some((p) => p.status === "pending");
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -24,7 +25,9 @@ export function ResultScreen({ photos, meterNumber, onRestart, queued }: ResultS
         ].join(" ")}
       >
         {queued
-          ? "Lokal gespeichert – wird hochgeladen sobald Verbindung besteht"
+          ? hasPending
+            ? "Offline gespeichert – KI-Analyse und Upload folgen bei Verbindung"
+            : "Lokal gespeichert – wird hochgeladen sobald Verbindung besteht"
           : allPassed
           ? "Installation erfolgreich geprüft ✓"
           : "Fotos gespeichert – Innendienst prüft die Aufnahmen"}
@@ -41,6 +44,7 @@ export function ResultScreen({ photos, meterNumber, onRestart, queued }: ResultS
         {photos.map((p) => {
           const def = STEPS.find((s) => s.key === p.step)!;
           const passed = p.status === "passed";
+          const pending = p.status === "pending";
           return (
             <div
               key={p.step}
@@ -61,11 +65,15 @@ export function ResultScreen({ photos, meterNumber, onRestart, queued }: ResultS
                       "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
                       passed
                         ? "bg-success/15 text-success"
+                        : pending
+                        ? "bg-warning/15 text-warning"
                         : "bg-destructive/15 text-destructive",
                     ].join(" ")}
                   >
                     {passed ? (
                       <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                    ) : pending ? (
+                      <Clock className="h-3.5 w-3.5" />
                     ) : (
                       <X className="h-3.5 w-3.5" strokeWidth={3} />
                     )}
@@ -74,7 +82,11 @@ export function ResultScreen({ photos, meterNumber, onRestart, queued }: ResultS
                 <div
                   className={[
                     "mt-1 text-xs leading-snug",
-                    passed ? "text-muted-foreground" : "text-destructive",
+                    passed
+                      ? "text-muted-foreground"
+                      : pending
+                      ? "text-warning"
+                      : "text-destructive",
                   ].join(" ")}
                 >
                   {p.reasoning}

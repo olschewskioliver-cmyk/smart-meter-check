@@ -7,6 +7,7 @@ export interface PendingSubmission {
   meterNumber: string;
   photos: Array<{ step: StepKey; dataUrl: string }>;
   results: PhotoCheck[];
+  needsAiAnalysis: boolean;
 }
 
 const DB_NAME = "ovag-smart-meter";

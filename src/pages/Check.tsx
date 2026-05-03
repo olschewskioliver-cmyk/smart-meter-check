@@ -49,11 +49,37 @@ export default function Check() {
     if (items.length === 0) return;
     for (const item of items) {
       try {
+        let results = item.results;
+
+        if (item.needsAiAnalysis) {
+          const pendingPhotos = item.photos.filter((p) =>
+            item.results.find((r) => r.step === p.step)?.status === "pending"
+          );
+          if (pendingPhotos.length > 0) {
+            const { data, error } = await supabase.functions.invoke("analyze-photos", {
+              body: { photos: pendingPhotos.map((p) => ({ step: p.step, dataUrl: p.dataUrl })) },
+            });
+            if (error) throw error;
+            const aiResults = data.results as Array<{
+              step: StepKey;
+              status: "passed" | "failed";
+              confidence: number;
+              reasoning: string;
+            }>;
+            results = item.results.map((r) => {
+              if (r.status !== "pending") return r;
+              const ai = aiResults.find((a) => a.step === r.step);
+              if (!ai) return r;
+              return { ...r, status: ai.status, confidence: ai.confidence, reasoning: ai.reasoning };
+            });
+          }
+        }
+
         await saveInstallation({
           userId: item.userId,
           meterNumber: item.meterNumber,
           photos: item.photos,
-          results: item.results,
+          results,
         });
         await remove(item.id);
         setPendingCount((n) => Math.max(0, n - 1));
@@ -100,6 +126,23 @@ export default function Check() {
 
   async function analyzePhoto(step: StepKey, dataUrl: string) {
     setAnalyzingSteps((prev) => new Set(prev).add(step));
+
+    if (!isOnline) {
+      setPhotoResults((prev) => ({
+        ...prev,
+        [step]: {
+          step,
+          imageUrl: dataUrl,
+          status: "pending" as const,
+          confidence: 0,
+          reasoning: "Keine Verbindung – wird bei Verbindung automatisch analysiert.",
+        },
+      }));
+      setAnalyzingSteps((prev) => { const next = new Set(prev); next.delete(step); return next; });
+      setAwaitingDecision(step);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("analyze-photos", {
         body: { photos: [{ step, dataUrl }] },
@@ -186,9 +229,11 @@ export default function Check() {
   async function finalize(computed: PhotoCheck[]) {
     setPhase("saving");
 
+    const needsAiAnalysis = computed.some((r) => r.status === "pending");
+
     if (!isOnline) {
       try {
-        await enqueue({ userId: user!.id, meterNumber, photos, results: computed });
+        await enqueue({ userId: user!.id, meterNumber, photos, results: computed, needsAiAnalysis });
         setPendingCount((n) => n + 1);
         setQueued(true);
         setPhase("result");
@@ -206,7 +251,7 @@ export default function Check() {
       console.error("Save failed:", err);
       // Try to queue as fallback
       try {
-        await enqueue({ userId: user!.id, meterNumber, photos, results: computed });
+        await enqueue({ userId: user!.id, meterNumber, photos, results: computed, needsAiAnalysis });
         setPendingCount((n) => n + 1);
         setQueued(true);
         setPhase("result");
@@ -263,7 +308,7 @@ export default function Check() {
         <div className="mx-auto w-full max-w-[430px] px-5 pt-3">
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
             <WifiOff className="h-4 w-4 shrink-0" />
-            Keine Internetverbindung – Fotos können nicht hochgeladen werden.
+            Keine Internetverbindung – Fotos werden lokal gespeichert und bei Verbindung automatisch analysiert und hochgeladen.
           </div>
         </div>
       )}

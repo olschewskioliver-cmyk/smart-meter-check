@@ -1,9 +1,10 @@
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X, Loader2, Clock } from "lucide-react";
+import type { PhotoStatus } from "@/lib/types";
 
 interface CompletedStepRowProps {
   thumbnail: string;
   title: string;
-  aiStatus?: "passed" | "failed";
+  aiStatus?: PhotoStatus;
   isAnalyzing?: boolean;
   reasoning?: string;
   /** True when this step is actively waiting for the electrician to decide retake/continue */
@@ -25,7 +26,9 @@ export function CompletedStepRow({
   const borderClass = awaitingDecision
     ? aiStatus === "passed"
       ? "border-primary"
-      : "border-destructive"
+      : aiStatus === "pending"
+        ? "border-warning"
+        : "border-destructive"
     : "border-border";
 
   return (
@@ -45,6 +48,8 @@ export function CompletedStepRow({
             <div className="text-xs text-success">KI: Bestanden ✓</div>
           ) : aiStatus === "failed" ? (
             <div className="text-xs text-destructive">KI: Fehler gefunden ✗</div>
+          ) : aiStatus === "pending" ? (
+            <div className="text-xs text-warning">Offline – Analyse folgt automatisch</div>
           ) : (
             <div className="text-xs text-muted-foreground">Aufgenommen</div>
           )}
@@ -59,6 +64,10 @@ export function CompletedStepRow({
         ) : aiStatus === "failed" ? (
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
             <X className="h-4 w-4" strokeWidth={3} />
+          </div>
+        ) : aiStatus === "pending" ? (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+            <Clock className="h-4 w-4" />
           </div>
         ) : (
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">

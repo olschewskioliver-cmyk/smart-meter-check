@@ -38,7 +38,7 @@ export const STEPS: StepDefinition[] = [
   },
 ];
 
-export type PhotoStatus = "passed" | "failed";
+export type PhotoStatus = "passed" | "failed" | "pending";
 
 export interface PhotoCheck {
   step: StepKey;
