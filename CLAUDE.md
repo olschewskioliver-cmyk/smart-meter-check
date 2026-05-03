@@ -164,6 +164,17 @@ TOKEN=$(grep VERCEL_PERSONAL_TOKEN .env.local | cut -d= -f2) && vercel --token "
 
 Never run `vercel --prod` without the `--token` flag — the global CLI auth may be set to the work account.
 
+**Critical: always push to GitHub after deploying.** This is a collaborative codebase — Oliver and David work in parallel. Deploying without pushing means the other person's Claude Code works on outdated code. The correct sequence is always:
+
+```bash
+# 1. Deploy
+TOKEN=$(grep VERCEL_PERSONAL_TOKEN .env.local | cut -d= -f2) && vercel --token "$TOKEN" --prod --yes
+# 2. Commit and push
+git add <changed files> && git commit -m "..." && git push origin main
+```
+
+Never skip the git push.
+
 ## Key files
 
 ```
