@@ -9,7 +9,7 @@ interface AuthContextValue {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (emailOrUsername: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -40,9 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadProfile(session.user.id);
@@ -54,8 +52,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  async function signIn(emailOrUsername: string, password: string) {
+    // Resolve username → auth email if input doesn't look like an email
+    let authEmail = emailOrUsername.trim();
+    if (!authEmail.includes("@")) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("auth_email")
+        .eq("username", authEmail)
+        .single();
+      if (!data?.auth_email) return { error: "Benutzername nicht gefunden." };
+      authEmail = data.auth_email;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
     return { error: error?.message ?? null };
   }
 

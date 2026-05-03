@@ -1,6 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
-export type UserRole = "electrician" | "office";
+export type UserRole = "electrician" | "office" | "admin";
 export type InstallationStatus = "pending" | "edge_case" | "warning" | "auto_approved" | "approved" | "rejected";
 export type AiPhotoType = "gateway" | "meter_wiring" | "cabinet" | "nameplate";
 export type AiResult = "passed" | "failed";
@@ -13,16 +13,25 @@ export interface Database {
           id: string;
           full_name: string;
           role: UserRole;
+          username: string | null;
+          auth_email: string | null;
+          is_active: boolean;
         };
         Insert: {
           id: string;
           full_name: string;
           role: UserRole;
+          username?: string | null;
+          auth_email?: string | null;
+          is_active?: boolean;
         };
         Update: {
           id?: string;
           full_name?: string;
           role?: UserRole;
+          username?: string | null;
+          auth_email?: string | null;
+          is_active?: boolean;
         };
       };
       installations: {

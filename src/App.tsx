@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import Check from "./pages/Check.tsx";
 import Office from "./pages/Office.tsx";
+import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,14 @@ const App = () => (
               element={
                 <ProtectedRoute role="office">
                   <Office />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute role="admin">
+                  <Admin />
                 </ProtectedRoute>
               }
             />

@@ -6,15 +6,16 @@ import { useAuth } from "@/context/AuthContext";
 export default function Login() {
   const navigate = useNavigate();
   const { user, profile, loading, signIn } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect already-logged-in users to their dashboard
   useEffect(() => {
     if (!loading && user && profile) {
-      navigate(profile.role === "office" ? "/office" : "/check", { replace: true });
+      if (profile.role === "admin") navigate("/admin", { replace: true });
+      else if (profile.role === "office") navigate("/office", { replace: true });
+      else navigate("/check", { replace: true });
     }
   }, [user, profile, loading, navigate]);
 
@@ -22,12 +23,11 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    const { error: authError } = await signIn(email, password);
+    const { error: authError } = await signIn(identifier, password);
     if (authError) {
-      setError("E-Mail oder Passwort ungültig.");
+      setError("Zugangsdaten ungültig.");
       setIsSubmitting(false);
     }
-    // On success: the useEffect above handles redirect once profile loads
   }
 
   return (
@@ -48,14 +48,14 @@ export default function Login() {
 
           <label className="mb-3 block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-office-muted">
-              E-Mail
+              E-Mail oder Benutzername
             </span>
             <input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@ovag.de"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="name@ovag.de oder benutzername"
               className="min-h-[44px] w-full rounded-lg border border-office bg-office-elevated px-3 text-sm text-office-fg placeholder:text-office-muted/60 outline-none focus:border-office-accent focus:ring-2 focus:ring-office-accent/30"
             />
           </label>

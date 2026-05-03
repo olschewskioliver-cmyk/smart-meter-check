@@ -7,6 +7,11 @@ interface Props {
   role: UserRole;
 }
 
+function dashboardFor(role: UserRole) {
+  if (role === "office" || role === "admin") return "/office";
+  return "/check";
+}
+
 export function ProtectedRoute({ children, role }: Props) {
   const { user, profile, loading } = useAuth();
 
@@ -19,12 +24,14 @@ export function ProtectedRoute({ children, role }: Props) {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-
-  // If auth is done but profile is still null, the DB row is missing — boot back to login
   if (!profile) return <Navigate to="/login" replace />;
+  if (!profile.is_active) return <Navigate to="/login" replace />;
+
+  // Admin can access any protected route
+  if (profile.role === "admin") return <>{children}</>;
 
   if (profile.role !== role) {
-    return <Navigate to={profile.role === "office" ? "/office" : "/check"} replace />;
+    return <Navigate to={dashboardFor(profile.role)} replace />;
   }
 
   return <>{children}</>;
