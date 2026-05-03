@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { LogOut, Plus, KeyRound, ShieldCheck, ShieldOff, BarChart2, Users } from "lucide-react";
-import { ElectricianReport } from "@/components/admin/ElectricianReport";
+import { LogOut, Plus, KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Wordmark } from "@/components/shared/Wordmark";
 import {
@@ -30,14 +29,11 @@ function isInternalEmail(email: string | null) {
   return !email || email.endsWith("@intern.ovag-netz.de");
 }
 
-type AdminTab = "users" | "quality";
-
 export default function Admin() {
   const { profile, signOut } = useAuth();
   const { data: users = [], isLoading } = useAdminUsers();
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<AdminTab>("users");
   const [showCreate, setShowCreate] = useState(false);
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -101,41 +97,23 @@ export default function Admin() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        {/* Tab nav */}
         <div className="mb-6 flex items-center justify-between">
-          <div className="flex gap-1 rounded-xl border border-office bg-office-panel p-1">
-            <button
-              type="button"
-              onClick={() => setTab("users")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === "users" ? "bg-office-accent text-white" : "text-office-muted hover:text-office-fg"}`}
-            >
-              <Users className="h-4 w-4" /> Benutzerverwaltung
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("quality")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === "quality" ? "bg-office-accent text-white" : "text-office-muted hover:text-office-fg"}`}
-            >
-              <BarChart2 className="h-4 w-4" /> Qualitätsbericht
-            </button>
+          <div>
+            <h1 className="text-xl font-bold text-office-fg">Benutzerverwaltung</h1>
+            <p className="mt-0.5 text-sm text-office-muted">{users.length} Benutzer</p>
           </div>
-
-          {tab === "users" && (
-            <button
-              type="button"
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 rounded-lg bg-office-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              Neuer Benutzer
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 rounded-lg bg-office-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Neuer Benutzer
+          </button>
         </div>
 
-        {tab === "quality" && <ElectricianReport />}
-
         {/* User table */}
-        {tab === "users" && <div className="rounded-xl border border-office bg-office-panel overflow-hidden">
+        <div className="rounded-xl border border-office bg-office-panel overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-office text-left">
@@ -211,7 +189,7 @@ export default function Admin() {
               ))}
             </tbody>
           </table>
-        </div>}
+        </div>
       </main>
 
       {/* Create user modal */}

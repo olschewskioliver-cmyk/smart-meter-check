@@ -8,6 +8,7 @@ import { AutoApprovedList } from "@/components/office/AutoApprovedList";
 import { AllJobsTable } from "@/components/office/AllJobsTable";
 import { DetailPanel } from "@/components/office/DetailPanel";
 import { UserManagement } from "@/components/office/UserManagement";
+import { ElectricianReport } from "@/components/admin/ElectricianReport";
 import { useAuth } from "@/context/AuthContext";
 import { useInstallationsList, useInstallationDetail } from "@/lib/useInstallationsQuery";
 
@@ -95,6 +96,12 @@ export default function Office() {
         <div className="flex flex-1 overflow-hidden">
           {view === "users" ? (
             <UserManagement />
+          ) : view === "quality" ? (
+            <div className="flex-1 overflow-y-auto bg-office px-8 py-8">
+              <div className="mx-auto max-w-4xl">
+                <ElectricianReport />
+              </div>
+            </div>
           ) : (
             <>
               <div style={{ width: panelWidth }} className="relative shrink-0 bg-office-panel">

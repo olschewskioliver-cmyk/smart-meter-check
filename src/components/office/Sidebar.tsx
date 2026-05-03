@@ -1,7 +1,7 @@
-import { AlertCircle, CheckCircle2, ListChecks, Users } from "lucide-react";
+import { AlertCircle, BarChart2, CheckCircle2, ListChecks, Users } from "lucide-react";
 import { Wordmark } from "@/components/shared/Wordmark";
 
-export type OfficeView = "edge" | "auto" | "all" | "users";
+export type OfficeView = "edge" | "auto" | "all" | "quality" | "users";
 
 interface SidebarProps {
   active: OfficeView;
@@ -44,6 +44,12 @@ export function Sidebar({ active, onChange, counts, stats, isAdmin }: SidebarPro
           label="Alle Aufträge"
           active={active === "all"}
           onClick={() => onChange("all")}
+        />
+        <NavItem
+          icon={<BarChart2 className="h-4 w-4" />}
+          label="Qualitätsbericht"
+          active={active === "quality"}
+          onClick={() => onChange("quality")}
         />
 
         {isAdmin && (
